@@ -113,3 +113,19 @@ Resources:
             RestApiId: !Ref Api
             Path: /directory
             Method: get
+
+  UpdateComment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bg-${ENV}-updateComment
+      Handler: endpoints.update_comment
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !FindInMap [ENVVARS, !Ref ENV, ProfilesTable]
+      Events:
+        UpdateComment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /comment
+            Method: post

@@ -45,6 +45,7 @@ class Profile:
             self._parse(user, profile)
 
     def _parse(self, user, profile):
+        self.user = user
         self.id = str(profile["id"])
         self.logo = profile["logo"]
         self.short = profile["short"]
@@ -76,6 +77,23 @@ class Profile:
                 c["user"] = "anonymous"
                 anon_comments.append(c)
         return anon_comments
+
+    def _save(self):
+        # update dynamoDB
+        pass
+
+    def comment(self, comment):
+        # TODO safety check comment
+        comments = self.comments
+        # remove existing comments
+        for i, c in enumerate(self.comments):
+            if c["user"] == self.user['email']:
+                comments.pop(i)
+        # add comment
+        comments.append({'user': self.user['email'], 'comment': comment})
+        self.comments = comments
+        self._save()
+
 
     def _dict(self):
         return {
@@ -147,3 +165,15 @@ def get_directory(evt, c):
     user = evt["requestContext"]["authorizer"] # email, role, profileId
     directory = Directory(user)
     return response(code=200, msg=directory._dict())
+
+def update_comment(evt, c):
+    try:
+        user = evt["requestContext"]["authorizer"]
+        body = json.loads(evt['body'])
+        profileId = body['profileId']
+        comment = body['comment']
+    except:
+        return response(code=201, msg={'error': 'bad payload'})
+    profile = Profile(user, profileId)
+    profile.comment(comment)
+    return response(code=200, msg=profile._dict())
