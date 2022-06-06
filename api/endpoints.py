@@ -97,7 +97,7 @@ class User:
             user = USERS.get_item(Key={"user": email})
             if "Item" not in user:
                 raise NotFound(email)
-            self.email = user["Item"]["email"]
+            self.email = user["Item"]["user"]
             self.role = user["Item"]["role"]
             if "profileId" in user["Item"]:
                 self.profileId = user["Item"]["profileId"]
