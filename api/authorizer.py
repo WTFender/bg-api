@@ -43,6 +43,7 @@ def authorize(event, context):
         methods.extend([[HttpVerb.GET, "/user"]])
         methods.extend([[HttpVerb.GET, "/directory"]])
         methods.extend([[HttpVerb.POST, "/comment"]])
+        methods.extend([[HttpVerb.DELETE, "/comment"]])
 
     # arn:aws:execute-api:us-east-1:123456789012:s4x3opwd6i/test/GET/request
     tmp = event["methodArn"].split(":")
