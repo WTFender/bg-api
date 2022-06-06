@@ -1,0 +1,115 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: bg dev
+
+Parameters:
+  ENV:
+    Type: String
+    Default: dev
+
+Mappings:
+  ENVVARS:
+    dev:
+      Domain: api.bg.dev.wtfender.com
+      CertArn: arn:aws:acm:us-east-1:391785637824:certificate/ba219df7-22da-4080-b8aa-7c8123e08659
+      Origin: "'https://bg.dev.wtfender.com'"
+      AuthServer: https://dev-611573.okta.com
+      UserTable: dev-bg-users
+      ProfilesTable: dev-bg-profiles
+    prod:
+      Todo: Later
+
+Globals:
+  Function:
+    CodeUri: api
+    Runtime: python3.9
+    Timeout: 3
+    Environment:
+      Variables:
+        ENV: !Ref ENV
+        Origin: !FindInMap [ENVVARS, !Ref ENV, Origin]
+        AuthServer: !FindInMap [ENVVARS, !Ref ENV, AuthServer]
+        UserTable: !FindInMap [ENVVARS, !Ref ENV, UserTable]
+        ProfilesTable: !FindInMap [ENVVARS, !Ref ENV, ProfilesTable]
+
+Resources:
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: default
+      DisableExecuteApiEndpoint: True
+      Domain:
+        DomainName: !FindInMap [ENVVARS, !Ref ENV, Domain]
+        CertificateArn: !FindInMap [ENVVARS, !Ref ENV, CertArn]
+        Route53:
+          HostedZoneId: Z09711543QWQN4MK96WMJ
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'content-type,authorization'"
+        AllowOrigin: !FindInMap [ENVVARS, !Ref ENV, Origin]
+        AllowCredentials: True
+      Auth:
+        DefaultAuthorizer: TokenAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: False
+        Authorizers:
+          TokenAuthorizer:
+            FunctionArn: !GetAtt Authorizer.Arn
+            Identity:
+              ReauthorizeEvery: 3600
+              ValidationExpression: '(^[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*\.[A-Za-z0-9-_]*$)'
+      GatewayResponses:
+        DEFAULT_4xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              Access-Control-Allow-Headers: "'content-type,authorization'"
+              Access-Control-Allow-Origin: !FindInMap [ENVVARS, !Ref ENV, Origin]
+              Access-Control-Allow-Credentials: True
+        DEFAULT_5xx:
+          ResponseParameters:
+            Headers:
+              Access-Control-Allow-Methods: "'GET,POST,OPTIONS'"
+              Access-Control-Allow-Headers: "'content-type,authorization'"
+              Access-Control-Allow-Origin: !FindInMap [ENVVARS, !Ref ENV, Origin]
+              Access-Control-Allow-Credentials: True
+
+  Authorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bg-${ENV}-authorizer
+      Handler: authorizer.authorize
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !FindInMap [ENVVARS, !Ref ENV, UserTable]
+
+  GetUser:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bg-${ENV}-getUser
+      Handler: endpoints.get_user
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !FindInMap [ENVVARS, !Ref ENV, UserTable]
+      Events:
+        GetUser:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /user
+            Method: get
+
+  GetDirectory:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bg-${ENV}-getDirectory
+      Handler: endpoints.get_directory
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !FindInMap [ENVVARS, !Ref ENV, ProfilesTable]
+      Events:
+        GetDirectory:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /directory
+            Method: get
