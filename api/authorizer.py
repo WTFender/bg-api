@@ -42,6 +42,7 @@ def authorize(event, context):
         context = {'email': user.email, 'role': user.role, 'profileId': user.profileId}
         methods.extend([[HttpVerb.GET, "/user"]])
         methods.extend([[HttpVerb.GET, "/directory"]])
+        methods.extend([[HttpVerb.POST, "/comment"]])
 
     # arn:aws:execute-api:us-east-1:123456789012:s4x3opwd6i/test/GET/request
     tmp = event["methodArn"].split(":")
