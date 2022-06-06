@@ -40,7 +40,7 @@ class Directory:
 class Profile:
     def __init__(self, user, profileId=None, profile=None):
         if profileId:
-            self._parse(user, PROFILES.get_item(Key={"id": profileId}))
+            self._parse(user, PROFILES.get_item(Key={"id": profileId})['Item'])
         elif profile:
             self._parse(user, profile)
 
@@ -78,10 +78,6 @@ class Profile:
                 anon_comments.append(c)
         return anon_comments
 
-    def _save(self):
-        # update dynamoDB
-        pass
-
     def comment(self, comment):
         # TODO safety check comment
         comments = self.comments
@@ -92,8 +88,9 @@ class Profile:
         # add comment
         comments.append({'user': self.user['email'], 'comment': comment})
         self.comments = comments
-        self._save()
 
+    def _save(self):
+        PROFILES.put_item(Item=self._dict())
 
     def _dict(self):
         return {
@@ -176,4 +173,5 @@ def update_comment(evt, c):
         return response(code=201, msg={'error': 'bad payload'})
     profile = Profile(user, profileId)
     profile.comment(comment)
+    profile._save()
     return response(code=200, msg=profile._dict())
