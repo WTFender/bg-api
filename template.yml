@@ -129,3 +129,19 @@ Resources:
             RestApiId: !Ref Api
             Path: /comment
             Method: post
+
+  DeleteComment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub bg-${ENV}-deleteComment
+      Handler: endpoints.delete_comments
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !FindInMap [ENVVARS, !Ref ENV, ProfilesTable]
+      Events:
+        DeleteComment:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /comment
+            Method: delete

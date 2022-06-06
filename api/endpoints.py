@@ -89,6 +89,13 @@ class Profile:
         comments.append({'user': self.user['email'], 'comment': comment})
         self.comments = comments
 
+    def del_comments(self):
+        comments = self.comments
+        for i, c in enumerate(self.comments):
+            if c["user"] == self.user['email']:
+                comments.pop(i)
+        self.comments = comments
+
     def _save(self):
         PROFILES.put_item(Item=self._dict())
 
@@ -173,5 +180,17 @@ def update_comment(evt, c):
         return response(code=201, msg={'error': 'bad payload'})
     profile = Profile(user, profileId)
     profile.comment(comment)
+    profile._save()
+    return response(code=200, msg=profile._dict())
+
+def delete_comments(evt, c):
+    try:
+        user = evt["requestContext"]["authorizer"]
+        body = json.loads(evt['body'])
+        profileId = body['profileId']
+    except:
+        return response(code=201, msg={'error': 'bad payload'})
+    profile = Profile(user, profileId)
+    profile.del_comments()
     profile._save()
     return response(code=200, msg=profile._dict())
